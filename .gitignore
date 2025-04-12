@@ -8,7 +8,7 @@
 *.toc
 *.pdf
 
-# potentially large zoib model files
+# potentially large model files
 *.rds
 
 # Other files */node_modules/
