@@ -1,0 +1,289 @@
+---
+title: "Experiment 1 Data Analysis"
+output:
+  html_document:
+    df_print: paged
+---
+
+Loading libraries and functions for data import:
+
+```{r}
+
+library(plyr)
+library(lme4)
+library(lmerTest)
+library(ggplot2)
+library(tidyverse)
+library(broom)
+library(emmeans)
+library(ordinal)
+library(brms)
+
+
+results <- read.csv("https://159d3d98-11fc-4642-8e29-43c994fa07d0.usrfiles.com/ugd/159d3d_ab22ce000af244c4a2410dc21d6c6a68.csv")
+view(results)
+table(results$Condition)
+
+
+```
+
+First overview plots:
+
+```{r}
+
+results$Condition <- (as.factor(as.character(results$Condition)))
+
+levels(results$Condition) <- c("NoPsFirst", "NoPsSecond", "PsFirst", "PsSecond", "EISimplePs", "SSimplePs")
+
+results <- as_tibble(results)
+
+results <- results %>%
+          mutate(Condition = fct_relevel(Condition, 
+             c("PsFirst", "PsSecond", "NoPsFirst", "NoPsSecond", "EISimplePs", "SSimplePs")))
+
+resultsPlot <- results %>%
+  group_by(Condition) %>%
+  dplyr::summarize(n = n(), MeanValue = mean(Value), sd = sd(Value))%>%
+  mutate( se=sd/sqrt(n))  %>%
+  mutate( ci=se * qt((1-0.05)/2 + .5, n-1))
+
+colours <- c("#727272", "#f1595f", "#79c36a", "#599ad3", "#f9a65a" , "#9e66ab")
+
+ggplot(resultsPlot, aes(x = Condition, y = MeanValue, fill=Condition))+
+  geom_bar(stat = "identity") +
+  ylim("1", "2", "3", "4", "5", "6", "7")+
+  geom_errorbar(aes(ymin=MeanValue-se, ymax=MeanValue+se), width=.1) +
+  scale_fill_manual(values=colours)+
+  theme(axis.text.x = element_text(angle = 45)) +
+  theme_classic() +
+  labs(title = "Mean rating per condition",
+       y = "Mean rating",
+       x = "Condition")
+        
+
+```
+
+Setting up factors for analyses:
+
+```{r}
+
+results$Condition <- as_factor(results$Condition)
+results$ID <- as_factor(results$ID)
+results$Trigger <- as_factor(results$Trigger)
+results$Value <- as_factor(results$Value)
+
+results <- results %>%
+      mutate(PsType = fct_collapse(Condition,
+        Ps = c("SSimplePs", "EISimplePs", "PsFirst", "PsSecond"),
+        NoPs = c("NoPsFirst", "NoPsSecond")
+      )) %>%
+      mutate(Order = fct_collapse(Condition,
+        First = c("PsFirst", "NoPsFirst"),
+        Second = c("PsSecond", "NoPsSecond"),
+      ))%>%
+      mutate(Order = fct_relevel(Order, c("First", "Second"))) %>%
+      mutate(SupType = fct_collapse(Condition,
+        NoPriorSupp = c("PsFirst", "EISimplePs"),
+        PriorSupp = c("PsSecond", "SSimplePs")
+      ))%>%
+      mutate(CompType = fct_collapse(Condition,
+                    Simple = c("SSimplePs", "EISimplePs"),
+                    Complex = c("PsFirst", "PsSecond", "NoPsFirst", "NoPsSecond")
+                                      )) %>%
+      mutate(SupType = fct_relevel(SupType, c("PriorSupp", "NoPriorSupp"))) %>%
+      mutate(OrderNum = as.numeric(Order)-1.5) %>%       ##### here and below, using this to numerically force the first two levels of the factor to be -0.5 and 0.5; any other levels will be removed via filter() in the relevant 2x2 analyses, so no harm done.
+      mutate(PsTypeNum = as.numeric(PsType)-1.5) %>%
+      mutate(SupTypeNum = as.numeric(SupType)-1.5) %>%
+      mutate(CompTypeNum = as.numeric(CompType)-1.5)
+
+filter(results, Order %in% c("First", "Second"))
+filter(results, SupType %in% c("PriorSupp", "NoPriorSupp"))
+
+
+
+```
+
+Check difference between EISimplePs and SSimplePs:
+
+```{r}
+
+EIvSSimple.ordinal <- clmm(Value ~ Condition + (1|ID) + (1+Condition|Trigger), filter(results, Condition %in% c("EISimplePs", "SSimplePs")), link = "logit")
+
+summary(EIvSSimple.ordinal)
+```
+
+
+Testing for Ps-NoPs interaction (predicted by asymmetry-based accounts):
+
+```{r}
+
+PsNoPs.ordinal <- clmm(Value ~ PsTypeNum*OrderNum + (1|ID) + (1+PsTypeNum*OrderNum|Trigger), filter(results, Order %in% c("First", "Second")), link = "logit")
+
+summary(PsNoPs.ordinal)
+
+PsNoPs.ordinal2 <- clmm(Value ~ PsTypeNum*OrderNum + (1|ID) + (1+PsTypeNum+OrderNum|Trigger), filter(results, Order %in% c("First", "Second")), link = "logit")
+
+
+anova(PsNoPs.ordinal,PsNoPs.ordinal2)
+
+
+PsNoPs.ordinal3 <- clmm(Value ~ PsTypeNum*OrderNum + (1|ID) + (1+PsTypeNum|Trigger), filter(results, Order %in% c("First", "Second")), link = "logit")
+
+anova(PsNoPs.ordinal,PsNoPs.ordinal3)
+
+PsNoPs.ordinal4 <- clmm(Value ~ PsTypeNum*OrderNum + (1|ID) + (1+OrderNum|Trigger), filter(results, Order %in% c("First", "Second")), link = "logit")
+
+anova(PsNoPs.ordinal,PsNoPs.ordinal4)
+
+```
+
+Final model is PsNoPs.ordinal3
+
+```{r}
+summary(PsNoPs.ordinal3)
+```
+
+No interaction, no significant condition effects. Note: OrderNum slope for Trigger also converges, but accounts for much less variance; signifance pattern doesn't change.
+
+The Bayesian part of the analysis:
+
+```{r}
+head(filter(results, Order %in% c("First", "Second")))
+results$Value <- as.numeric(as.character(results$Value)) #make Value a factor (model below is cumulative and requires it)
+# Priors from Mandelkern et al. brm analysis (newly conducted; no Bayesian stats in original)
+priors <- c(
+    prior(normal(-2.26, 0.22), class = "Intercept",
+        coef = "1"),
+  prior(normal(-1.18, 0.21), class = "Intercept",
+        coef = "2"),
+  prior(normal(-0.52, 0.21), class = "Intercept",
+        coef = "3"),
+  prior(normal(-0.06, 0.21), class = "Intercept",
+        coef = "4"),
+  prior(normal(0.79, 0.21), class = "Intercept",
+        coef = "5"),
+  prior(normal(2.17, 0.22), class = "Intercept",
+        coef = "6"),
+  prior(normal(0.79, 0.32), class = "b", 
+        coef = "PsTypeNum"),
+  prior(normal(1.04, 0.22), class = "b",
+        coef = "OrderNum"),
+  prior(normal(-1.49, 0.38), class = "b",
+        coef = "PsTypeNum:OrderNum")
+)
+
+
+PsNoPs.brm <- brm(Value ~ PsTypeNum*OrderNum + (1|ID) + (1+PsTypeNum|Trigger),
+                 family=cumulative("logit"),  
+                 control = list(adapt_delta = 0.98),
+                 save_pars = save_pars(all = TRUE),
+                 iter = 20000,
+                 prior =  priors,
+                 filter(results, Order %in% c("First", "Second")), backend = "cmdstanr")
+
+PsNoPs.brm
+
+PsNoPs.brmStan <- brm(Value ~ PsTypeNum*OrderNum + (1|ID) + (1+PsTypeNum|Trigger),
+                 family=cumulative("logit"),  
+                 control = list(adapt_delta = 0.98),
+                 save_pars = save_pars(all = TRUE),
+                 iter = 0,
+                 chains = 0,
+                 prior =  priors,
+                 filter(results, Order %in% c("First", "Second")), backend = "rstan")
+
+priors <- c(
+    prior(normal(-2.26, 0.22), class = "Intercept",
+        coef = "1"),
+  prior(normal(-1.18, 0.21), class = "Intercept",
+        coef = "2"),
+  prior(normal(-0.52, 0.21), class = "Intercept",
+        coef = "3"),
+  prior(normal(-0.06, 0.21), class = "Intercept",
+        coef = "4"),
+  prior(normal(0.79, 0.21), class = "Intercept",
+        coef = "5"),
+  prior(normal(2.17, 0.22), class = "Intercept",
+        coef = "6"),
+  prior(normal(0.79, 0.32), class = "b", 
+        coef = "PsTypeNum"),
+  prior(normal(1.04, 0.22), class = "b",
+        coef = "OrderNum")
+)
+
+
+PsNoPsNullInt.brm <- brm(Value ~ PsTypeNum+OrderNum + (1|ID) + (1+PsTypeNum|Trigger),
+                 family=cumulative("logit"),  
+                 control = list(adapt_delta = 0.98), 
+                 save_pars = save_pars(all = TRUE),
+                 iter = 20000,
+                 prior =  priors,                 
+                 filter(results, Order %in% c("First", "Second")))
+
+
+
+margLogLik_linear <- bridge_sampler(PsNoPs.brm,  silent = TRUE)
+
+margLogLik_null <- bridge_sampler(PsNoPsNullInt.brm, silent = TRUE)
+
+(BF_ln <- bayes_factor(margLogLik_linear, margLogLik_null))
+
+```
+
+
+Testing for condition differences relative to Support Control:
+
+```{r}
+
+PsNoPs.emm = emmeans(PsNoPs.ordinal3, specs = pairwise ~ OrderNum|PsTypeNum)
+
+PsNoPs.emm$contrasts %>%
+  rbind()
+
+```
+
+No significant effects of Order in either Ps or No-Ps
+
+Next: testing interaction between CompType and SupType:
+
+```{r}
+
+Support.ordinal <- clmm(Value ~ CompTypeNum * SupTypeNum + (1|ID) + (1+CompTypeNum*SupTypeNum|Trigger), filter(results, PsType =="Ps"), link = "logit")
+
+summary(Support.ordinal)
+
+Support.ordinal2 <- clmm(Value ~ CompTypeNum * SupTypeNum + (1|ID) + (1+CompTypeNum+SupTypeNum|Trigger), filter(results, PsType =="Ps"), link = "logit")
+
+Support.ordinal3 <- clmm(Value ~ CompTypeNum * SupTypeNum + (1|ID) + (1+SupTypeNum|Trigger), filter(results, PsType =="Ps"), link = "logit")
+
+Support.ordinal4 <- clmm(Value ~ CompTypeNum * SupTypeNum + (1|ID) + (1+CompTypeNum|Trigger), filter(results, PsType =="Ps"), link = "logit")
+
+anova(Support.ordinal,Support.ordinal2)
+anova(Support.ordinal,Support.ordinal3)
+anova(Support.ordinal,Support.ordinal4)
+```
+
+Including by-trigger random slope for interaction doesn't significantly improve model fit. Including by-trigger random slope for CompType does make a difference. Including by-trigger random slope for SupType doesn't make a difference. So, our final model is Support.ordinal4:
+
+```{r}
+summary(Support.ordinal4)
+
+```
+
+Significant interaction (plus main effect dominated by interaction)
+
+Follow-up pairwise comparisons:
+
+```{r}
+Support.emm <- emmeans(Support.ordinal4, specs = pairwise ~ SupTypeNum|CompTypeNum)
+
+
+
+Support.emm$contrasts %>%
+  rbind()
+
+
+```
+
+Support-Ps-Cond is rated significantly higher than EI-Ps-Cond. The Disj conditions are NOT significantly lower in rating than S-Ps-Cond.
+

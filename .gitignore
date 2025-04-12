@@ -1,0 +1,35 @@
+*.out
+*.bbl
+*.blg
+*.log
+*.synctex.gz
+*.aux
+*.synctex.gz
+*.toc
+*.pdf
+
+# potentially large zoib model files
+*.rds
+
+# Other files */node_modules/
+*.RData
+*.config
+*.input
+*.properties
+*.question
+*.results
+*.success
+*_invoice.csv
+*.Rhistory
+*.DS_Store
+*.DS_Store*
+*catch_trials.csv
+*subject_information.csv
+*system.csv
+*trials.csv
+*mturk.csv
+*mturk/
+*.gitattributes
+
+# Rds files of models (too big)
+*models/
