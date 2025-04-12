@@ -84,7 +84,145 @@ ggplot(means, aes(x=verb, y=Mean, fill=VeridicalityGroup)) +
   theme(axis.text.x = element_text(size = 12, angle = 45, hjust = 1)) 
 ggsave("../graphs/mean-certainty-by-predicateType.pdf",height=4.5,width=7)
 
-# Fig X: plot of mean naturalness ratings in explicit ignorance context ----
+# Fig 5: predicates ordered by difference (colored facets) ----
+# for 20 clause-embedding predicates only
+# with statistics output
+
+# load cleaned data
+d = read_tsv("../data/cd.tsv")
+
+names(d)
+table(d$context)
+
+length(unique(d$participantID)) #370 participants
+
+# calculate mean naturalness rating by predicate and context
+table(d$expression)
+table(d$context)  #explicit ignorance / factL / factH
+
+nat.means = d %>%
+  filter(expression != "practice" & expression != "controlGood1" & expression != "controlGood2" & expression != "controlGood3" & expression != "controlGood4") %>%
+  filter(expression != "also" & expression != "too" & expression != "again" & expression != "cleft" &
+           expression != "stop" & expression != "continue") %>%
+  group_by(expression,context) %>%
+  summarize(Mean = mean(response), CILow = ci.low(response), CIHigh = ci.high(response)) %>%
+  mutate(YMin = Mean - CILow, YMax = Mean + CIHigh) %>%
+  ungroup %>%
+  select(-c(CILow,CIHigh)) %>%
+  mutate(context = as.factor(context))
+nat.means
+table(nat.means$context)
+nat.means$expression <- as.factor(nat.means$expression)
+levels(nat.means$expression)
+
+t = d %>%
+  filter(expression != "practice" & expression != "controlGood1" & expression != "controlGood2" & expression != "controlGood3" & expression != "controlGood4") %>%
+  filter(expression != "also" & expression != "too" & expression != "again" & expression != "cleft" &
+           expression != "stop" & expression != "continue") %>%
+  mutate(context = as.factor(context))
+levels(t$context)
+
+# order predicates by difference in EIC-"high" rating
+tmp.EIC <- t %>%
+  filter(context == "explicitIgnorance") %>%
+  group_by(expression) %>%
+  summarize(Mean.EIC = mean(response))
+tmp.EIC
+
+tmp.HIGH <- t %>%
+  filter(context == "factH") %>%
+  group_by(expression) %>%
+  summarize(Mean.HIGH = mean(response))
+tmp.HIGH
+
+tmp = left_join(tmp.EIC,tmp.HIGH)
+tmp
+tmp$Diff = tmp$Mean.EIC-tmp$Mean.HIGH
+tmp
+tmp = tmp %>%
+  mutate(expression = fct_reorder(as.factor(expression),Diff))
+tmp
+
+levels(tmp$expression)
+
+nat.means$expression = factor(nat.means$expression, levels=tmp$expression[order(tmp$expression)], ordered=TRUE)
+t$expression = factor(t$expression, levels=tmp$expression[order(tmp$expression)], ordered=TRUE)
+levels(nat.means$expression)
+levels(t$expression)
+
+# order the contexts: EIC, low, high
+levels(nat.means$context)
+nat.means$context = factor(nat.means$context, levels = c("explicitIgnorance", "factL", "factH"))
+levels(t$context)
+t$context = factor(t$context, levels = c("explicitIgnorance", "factL", "factH"))
+
+# color code the expressions
+factives <- c("know", "discover", "be annoyed", "reveal", "see")
+fillers <- c("too", "also","cleft","again","stop", "continue")
+
+fill.color <- ifelse(levels(nat.means$expression) %in% factives, '#D55E00', "black")
+fill.color
+
+# to color the facets differently
+library(ggh4x)
+
+strip <- strip_themed(background_x = elem_list_rect(fill = fill.color))
+
+nat.means
+
+# join results of statistical analysis with nat.means
+contrasts = read_csv("../data/values.csv")
+contrasts
+#view(contrasts)
+contrasts = contrasts %>%
+  mutate(expression = recode(expression,"be.annoyed" = "be annoyed", "be.right" = "be right"))
+contrasts
+contrasts$context = factor(contrasts$context, levels = c("explicitIgnorance", "factL", "factH"))
+contrasts$expression = as.factor(contrasts$expression)
+
+str(contrasts$hdi)
+
+# make hdi column the linetype column (numeric reference to linetype didn't work)
+contrasts = contrasts %>%
+  mutate(linetype = case_when(hdi == 0 ~ "blank",
+                              hdi == 1 ~ "solid",
+                              TRUE ~ "ERROR")) %>%
+  select(-c(hdi))
+contrasts
+
+# join contrasts with nat.means
+nrow(nat.means) #60
+nrow(contrasts) #60
+nat.means = merge(nat.means,contrasts)
+nrow(nat.means) #60
+#view(nat.means)
+
+
+# violinplot
+ggplot() +
+  geom_violin(data=t, aes(x=context, y=response, fill = context), scale="width", linewidth = 0) +
+  geom_point(data=nat.means, aes(x=context, y=Mean, fill = context), shape=21,stroke=.5,size=2, color="black") +
+  geom_errorbar(data=nat.means,aes(x=context,ymin=YMin,ymax=YMax),width=0.1,color="black") +
+  scale_fill_manual(values=c('gray80',"#56B4E9",'#F0E442'),
+                    name = "Context",
+                    labels=c('explicit ignorance', 'lower prior probability','higher prior probability')) +
+  scale_x_discrete(breaks = NULL) +
+  scale_y_continuous(limits = c(-.15,1), breaks = seq(0,1,.2), labels = c("0",".2",".4",".6",".8","1")) +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  theme(axis.title.x=element_blank(), axis.text.x=element_blank()) +
+  theme(legend.position="top") +
+  guides(linetype = "none") +
+  ylab("Mean naturalness rating") +
+  xlab("Context") +
+  facet_wrap2(. ~ expression, nrow = 2, strip = strip) +
+  theme(panel.grid.minor = element_blank()) +
+  theme(strip.background = element_rect(fill="white")) +
+  theme(strip.text = element_text(color = "white")) +
+  geom_segment(data = nat.means, aes(x=x,xend=xend,y=y,yend=yend, linetype = linetype)) +
+  scale_linetype_manual(values =c(0,1))
+ggsave("../graphs/naturalness-by-context-and-predicate-with-stats.pdf",height=4.5,width=9)
+
+# Fig 6: plot of mean naturalness ratings in explicit ignorance context ----
 
 # load cleaned data
 d = read_tsv("../data/cd.tsv")
@@ -144,7 +282,10 @@ ggplot(nat.meansEIC, aes(x=expression, y=Mean)) +
 ggsave("../graphs/explicit-ignorance-naturalness-by-predicate.pdf",height=4,width=7)
 
 
-# Fig X: plot of mean naturalness ratings in by context ----
+### STUFF BELOW HERE NOT USED IN PAPER
+
+
+# Fig X: plot of mean naturalness ratings by context ----
 # for 20 clause-embedding predicates only
 # with statistics output
 
@@ -184,7 +325,6 @@ levels(t$context)
 
 # order predicates by mean difference 
 
-mean naturalness rating in EIC
 tmp <- t %>%
   filter(context == "explicitIgnorance") %>%
   group_by(expression) %>%
@@ -204,7 +344,7 @@ nat.means$context = factor(nat.means$context, levels = c("explicitIgnorance", "f
 levels(t$context)
 t$context = factor(t$context, levels = c("explicitIgnorance", "factL", "factH"))
 
-fill.color <- ifelse(levels(nat.means$expression) %in% factives, '#D55E00', "#009E73")
+fill.color <- ifelse(levels(nat.means$expression) %in% factives, '#D55E00', "black")
 fill.color
 
 # to color the facets differently
@@ -321,145 +461,6 @@ ggplot(subjmeans, aes(x=verb, y=Mean)) +
 ggsave("../graphs/mean-certainty-by-predicateType-JULIAN.pdf",height=4.5,width=7)
 
 # auxiliary plots ----
-
-#### like Fig 4 but predicates ordered by difference ----
-# for 20 clause-embedding predicates only
-# with statistics output
-
-# load cleaned data
-d = read_tsv("../data/cd.tsv")
-
-names(d)
-table(d$context)
-
-length(unique(d$participantID)) #370 participants
-
-# calculate mean naturalness rating by predicate and context
-table(d$expression)
-table(d$context)  #explicit ignorance / factL / factH
-
-nat.means = d %>%
-  filter(expression != "practice" & expression != "controlGood1" & expression != "controlGood2" & expression != "controlGood3" & expression != "controlGood4") %>%
-  filter(expression != "also" & expression != "too" & expression != "again" & expression != "cleft" &
-           expression != "stop" & expression != "continue") %>%
-  group_by(expression,context) %>%
-  summarize(Mean = mean(response), CILow = ci.low(response), CIHigh = ci.high(response)) %>%
-  mutate(YMin = Mean - CILow, YMax = Mean + CIHigh) %>%
-  ungroup %>%
-  select(-c(CILow,CIHigh)) %>%
-  mutate(context = as.factor(context))
-nat.means
-table(nat.means$context)
-nat.means$expression <- as.factor(nat.means$expression)
-levels(nat.means$expression)
-
-t = d %>%
-  filter(expression != "practice" & expression != "controlGood1" & expression != "controlGood2" & expression != "controlGood3" & expression != "controlGood4") %>%
-  filter(expression != "also" & expression != "too" & expression != "again" & expression != "cleft" &
-           expression != "stop" & expression != "continue") %>%
-  mutate(context = as.factor(context))
-levels(t$context)
-
-# order predicates by difference in EIC-"high" rating
-tmp.EIC <- t %>%
-  filter(context == "explicitIgnorance") %>%
-  group_by(expression) %>%
-  summarize(Mean.EIC = mean(response))
-tmp.EIC
-
-tmp.HIGH <- t %>%
-  filter(context == "factH") %>%
-  group_by(expression) %>%
-  summarize(Mean.HIGH = mean(response))
-tmp.HIGH
-
-tmp = left_join(tmp.EIC,tmp.HIGH)
-tmp
-tmp$Diff = tmp$Mean.EIC-tmp$Mean.HIGH
-tmp
-tmp = tmp %>%
-  mutate(expression = fct_reorder(as.factor(expression),Diff))
-tmp
-
-levels(tmp$expression)
-
-nat.means$expression = factor(nat.means$expression, levels=tmp$expression[order(tmp$expression)], ordered=TRUE)
-t$expression = factor(t$expression, levels=tmp$expression[order(tmp$expression)], ordered=TRUE)
-levels(nat.means$expression)
-levels(t$expression)
-
-# order the contexts: EIC, low, high
-levels(nat.means$context)
-nat.means$context = factor(nat.means$context, levels = c("explicitIgnorance", "factL", "factH"))
-levels(t$context)
-t$context = factor(t$context, levels = c("explicitIgnorance", "factL", "factH"))
-
-# color code the expressions
-factives <- c("know", "discover", "be annoyed", "reveal", "see")
-fillers <- c("too", "also","cleft","again","stop", "continue")
-
-fill.color <- ifelse(levels(nat.means$expression) %in% factives, '#D55E00', "#009E73")
-fill.color
-
-# to color the facets differently
-library(ggh4x)
-
-strip <- strip_themed(background_x = elem_list_rect(fill = fill.color))
-
-nat.means
-
-# join results of statistical analysis with nat.means
-contrasts = read_csv("../data/values.csv")
-contrasts
-#view(contrasts)
-contrasts = contrasts %>%
-  mutate(expression = recode(expression,"be.annoyed" = "be annoyed", "be.right" = "be right"))
-contrasts
-contrasts$context = factor(contrasts$context, levels = c("explicitIgnorance", "factL", "factH"))
-contrasts$expression = as.factor(contrasts$expression)
-
-str(contrasts$hdi)
-
-# make hdi column the linetype column (numeric reference to linetype didn't work)
-contrasts = contrasts %>%
-  mutate(linetype = case_when(hdi == 0 ~ "blank",
-                              hdi == 1 ~ "solid",
-                              TRUE ~ "ERROR")) %>%
-  select(-c(hdi))
-contrasts
-
-# join contrasts with nat.means
-nrow(nat.means) #60
-nrow(contrasts) #60
-nat.means = merge(nat.means,contrasts)
-nrow(nat.means) #60
-#view(nat.means)
-
-
-# violinplot
-ggplot() +
-  geom_violin(data=t, aes(x=context, y=response, fill = context), scale="width", linewidth = 0) +
-  geom_point(data=nat.means, aes(x=context, y=Mean, fill = context), shape=21,stroke=.5,size=2, color="black") +
-  geom_errorbar(data=nat.means,aes(x=context,ymin=YMin,ymax=YMax),width=0.1,color="black") +
-  scale_fill_manual(values=c('gray80',"#56B4E9",'#F0E442'),
-                    name = "Context",
-                    labels=c('explicit ignorance', 'lower prior probability','higher prior probability')) +
-  scale_x_discrete(breaks = NULL) +
-  scale_y_continuous(limits = c(-.15,1), breaks = seq(0,1,.2), labels = c("0",".2",".4",".6",".8","1")) +
-  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
-  theme(axis.title.x=element_blank(), axis.text.x=element_blank()) +
-  theme(legend.position="top") +
-  guides(linetype = "none") +
-  ylab("Mean naturalness rating") +
-  xlab("Context") +
-  facet_wrap2(. ~ expression, nrow = 2, strip = strip) +
-  theme(panel.grid.minor = element_blank()) +
-  theme(strip.background = element_rect(fill="white")) +
-  theme(strip.text = element_text(color = "black")) +
-  geom_segment(data = nat.means, aes(x=x,xend=xend,y=y,yend=yend, linetype = linetype)) +
-  scale_linetype_manual(values =c(0,1))
-ggsave("../graphs/naturalness-by-context-and-predicate-with-stats.pdf",height=4.5,width=9)
-
 
 #### plot of mean naturalness ratings against mean certainty ratings ----
 
