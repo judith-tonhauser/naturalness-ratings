@@ -1,0 +1,200 @@
+\documentclass[11pt,fleqn]{article}
+\usepackage[margin=1in,top=1in,bottom=1in]{geometry}
+\usepackage{tikz}
+\usepackage{mathtools}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage[natbibapa]{apacite}
+%\usepackage[dvips]{graphics}
+%\usepackage[table]{xcolor}
+%\usepackage{amssymb}
+\usepackage{float}
+%\usepackage{subfig}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{colortbl}
+\usepackage{color}
+
+\usepackage[normalem]{ulem}
+
+\usepackage{multicol}
+\usepackage{txfonts}
+\usepackage{amsfonts}
+%\usepackage{natbib}
+\usepackage{gb4e}
+\usepackage[all]{xy}
+\usepackage{rotating}
+\usepackage{tipa}
+\usepackage{multirow}
+\usepackage{authblk}
+\usepackage{url}
+\usepackage{pdflscape}
+\usepackage{rotating}
+\usepackage{adjustbox}
+\usepackage{array}
+
+
+\def\bad{{\leavevmode\llap{*}}}
+\def\marginal{{\leavevmode\llap{?}}}
+\def\verymarginal{{\leavevmode\llap{??}}}
+\def\swmarginal{{\leavevmode\llap{4}}}
+\def\infelic{{\leavevmode\llap{\#}}}
+
+\definecolor{airforceblue}{rgb}{0.36, 0.54, 0.66}
+%\definecolor{gray}{rgb}{0.36, 0.54, 0.66}
+
+\definecolor{Pink}{RGB}{240,0,120}
+\newcommand{\red}[1]{\textcolor{Pink}{#1}}
+\newcommand{\jd}[1]{\textbf{\textcolor{Pink}{[jd: #1]}}}
+\definecolor{green}{RGB}{0,158,115}
+\definecolor{orange}{RGB}{213,94,0}
+
+\newcommand{\dashrule}[1][black]{%
+  \color{#1}\rule[\dimexpr.5ex-.2pt]{4pt}{.4pt}\xleaders\hbox{\rule{4pt}{0pt}\rule[\dimexpr.5ex-.2pt]{4pt}{.4pt}}\hfill\kern0pt%
+}
+
+\setlength{\parindent}{.3in}
+\setlength{\parskip}{0ex}
+
+\newcommand{\yi}{\'{\symbol{16}}}
+\newcommand{\nasi}{\~{\symbol{16}}}
+\newcommand{\hina}{h\nasi na}
+\newcommand{\ina}{\nasi na}
+
+\newcommand{\foc}{$_{\mbox{\small F}}$}
+
+\hyphenation{par-ti-ci-pa-tion}
+
+\setlength{\bibhang}{0.5in}
+\setlength{\bibsep}{0mm}
+\bibpunct[:]{(}{)}{;}{a}{}{,}
+
+\newcommand{\6}{\mbox{$[\hspace*{-.6mm}[$}} 
+\newcommand{\9}{\mbox{$]\hspace*{-.6mm}]$}}
+\newcommand{\sem}[2]{\6#1\9$^{#2}$}
+\renewcommand{\ni}{\~{\i}}
+
+\newcommand{\citepos}[1]{\citeauthor{#1}'s \citeyear{#1}}
+\newcommand{\citeposs}[1]{\citeauthor{#1}'s}
+\newcommand{\citetpos}[1]{\citeauthor{#1}'s (\citeyear{#1})}
+
+\newcolumntype{R}[2]{%
+    >{\adjustbox{angle=#1,lap=\width-(#2)}\bgroup}%
+    l%
+    <{\egroup}%
+}
+\newcommand*\rot{\multicolumn{1}{R{90}{0em}}}% no optional argument here, please!
+
+\newcommand*\rots{\multicolumn{1}{R{90}{.7em}}}% no optional argument here, please!
+
+% positive coefficients/difference
+\definecolor{purple1}{RGB}{178,24,43}
+\definecolor{purple2}{RGB}{239,138,98} 
+\definecolor{purple3}{RGB}{253,219,199} 
+%\definecolor{yellow4}{RGB}{255,255,204}
+%\definecolor{green1}{RGB}{0, 158, 115} % >.95
+%\definecolor{green2}{RGB}{55, 185, 141} % .85-.95
+%\definecolor{green3}{RGB}{88, 214, 167} % .75-.85
+%\definecolor{green4}{RGB}{119, 242, 194} % <.75
+
+% negative coefficients/difference
+\definecolor{yellow1}{RGB}{33,102,172}
+\definecolor{yellow2}{RGB}{103,169,207}
+\definecolor{yellow3}{RGB}{209,229,240}
+%\definecolor{purple4}{RGB}{236,206,223}
+
+\begin{document}
+
+\clearpage
+\pagenumbering{arabic}	
+
+\begin{center}
+{\Large Supplemental materials for ``I don't know if naturalness ratings distinguish presuppositions from nonpresuppositions. Did Mandelkern et al.\ 2020 discover \\[0.05cm] that they do?''  by Judith Tonhauser and Judith Degen, \\[0.15cm] published in \emph{Linguistics \& Philosophy}.}
+\end{center}
+
+\appendix
+
+\setcounter{page}{1}
+%\renewcommand{\thetable}{A\arabic{table}}
+
+\setcounter{table}{0}
+\renewcommand{\thetable}{A\arabic{table}}
+
+\setcounter{figure}{0}
+\renewcommand{\thefigure}{A\arabic{figure}}
+
+\section{Experiment stimuli}\label{a:clauses}
+
+The twenty clause-embedding predicates used in the experiment are the same as in \citealt{degen-tonhauser-openmind,degen-tonhauser-language}:
+
+\begin{exe}
+\ex\label{predicates}
+\begin{xlist}
+\ex Factive: be annoyed, discover, know, reveal, see
+\ex Non-factive: acknowledge, admit, announce, be right, confess, confirm, establish, hear, inform, pretend, prove, say, suggest, think
+\end{xlist}
+\end{exe}
+Eventive predicates, like {\em discover} and {\em hear}, were realized in the past tense and stative predicates, like {\em know} and {\em be annoyed}, were realized in the present tense. The direct object of {\em inform} was realized by the proper name {\em Sam}. Each clause-embedding predicate was paired with a unique subject proper name. The speaker of the target stimuli was realized by a randomly sampled unique proper name. 
+
+The following list shows the 20 clauses that realized the complements of the predicates in the target stimuli, together with their lower and higher probability facts, respectively, that realized the preceding declarative sentences in the two support contexts.
+
+\begin{enumerate}[leftmargin=4ex,itemsep=-2pt]
+\item Mary is pregnant. Facts: Mary is a middle school student / Mary is taking a prenatal yoga class
+\item Josie went on vacation to France. Facts:  Josie doesn't have a passport / Josie loves France 
+\item Emma studied on Saturday morning. Facts: Emma is in first grade / Emma is in law school 
+\item Olivia sleeps until noon. Facts: Olivia has two small children / Olivia works the third shift
+\item Sophia got a tattoo. Facts: Sophia is a high end fashion model / Sophia is a hipster
+\item Mia drank 2 cocktails last night. Facts: Mia is a nun / Mia is a college student
+\item Isabella ate a steak on Sunday. Facts: Isabella is a vegetarian / Isabella is from Argentina
+\item Emily bought a car yesterday. Facts: Emily never has any money / Emily has been saving for a year
+\item Grace visited her sister. Facts: Grace hates her sister / Grace loves her sister
+\item Zoe calculated the tip. Facts: Zoe is 5 years old / Zoe is a math major
+\item Danny ate the last cupcake. Facts: Danny is a diabetic / Danny loves cake
+\item Frank got a cat. Facts: Frank is allergic to cats / Frank has always wanted a pet
+\item Jackson ran 10 miles. Facts: Jackson is obese / Jackson is training for a marathon
+\item Jayden rented a car. Facts: Jayden doesn't have a driver's license / Jayden's car is in the shop
+\item Tony had a drink last night. Facts: Tony has been sober for 20 years / Tony really likes to party with his friends
+\item Josh learned to ride a bike yesterday. Facts: Josh is a 75-year old man / Josh is a 5-year old boy
+\item Owen shoveled snow last winter. Facts: Owen lives in New Orleans / Owen lives in Chicago
+\item Julian dances salsa. Facts: Julian is German / Julian is Cuban
+\item Jon walks to work. Facts: Jon lives 10 miles away from work / Jon lives 2 blocks away from work
+\item Charley speaks Spanish. Facts: Charley lives in Korea / Charley lives in Mexico
+\end{enumerate}
+
+\section{Filler and practice stimuli}\label{a:fillerPractice}
+
+The following list shows the four filler stimuli where the interrogative was expected to receive high naturalness ratings in the context of the preceding declarative sentence. The values in parentheses indicate the mean naturalness rating that each of the four filler stimuli received. As shown, the third filler stimulus did not receive the expected high naturalness mean ratings, probably because participants were unwilling to accommodate that Hendrick has a car in a context in which Hendrick was looking to buy a car. This filler stimulus was therefore not used to exclude participants' data. 
+
+\begin{enumerate}[leftmargin=4ex,itemsep=-2pt]
+
+\item I don't know if Samantha has a new hat. Does Samantha have a new hat? (.89)
+
+\item  I don't know if this pizza has mushrooms on it. Does this pizza have mushrooms on it? (.87)
+
+\item Hendrick was looking to buy a car. Was Hendrick's car expensive? (.5)
+
+\item Mary visited her aunt yesterday. Is Mary's aunt sick? (.91)
+
+\end{enumerate}
+
+\noindent
+The following list shows the four practice stimuli in the order in which they were presented to the participants. Participants were able to advance to the experiment only if they gave a naturalness rating higher than .6 for the first and third stimulus, and a naturalness rating lower than .4 for the second and fourth stimulus.
+
+\begin{enumerate}[leftmargin=4ex,itemsep=-2pt]
+
+\item I have no idea where Natalie is from. Is Natalie from the USA?
+
+\item I don't have any sisters. Have you met my sister yet?
+
+\item I am going on vacation to Ireland. Does Fritz realize that Joe is going with me?
+
+\item I have no idea if Anna has any dogs. Is Samuel glad that Anna fed her dogs?
+
+\end{enumerate}
+
+\bibliographystyle{apacite}
+\bibliography{bibliography}
+ 
+\end{document}
+
