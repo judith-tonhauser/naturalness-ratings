@@ -9,7 +9,7 @@
 *.pdf
 
 # talks and papers
-*/output/
+output/
 
 # potentially large model files
 *.rds
