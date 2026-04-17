@@ -8,6 +8,9 @@
 *.toc
 *.pdf
 
+# talks and papers
+*/output/
+
 # potentially large model files
 *.rds
 
