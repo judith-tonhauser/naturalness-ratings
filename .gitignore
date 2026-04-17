@@ -6,7 +6,9 @@
 *.aux
 *.synctex.gz
 *.toc
-*.pdf
+
+# removed this line to show supplementalMaterials
+#*.pdf
 
 # talks and papers
 output/
